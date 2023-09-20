@@ -3,8 +3,10 @@ title: "ENPOVE FIES 2022"
 author: "Carlos Ballon-Salcedo"
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: true
+  prettydoc::html_pretty:
+    theme: leonids
+    highlight: github
+    toc: TRUE
     toc_depth: 3
 bibliography: references.bib
 ---
@@ -25,6 +27,7 @@ pacman::p_load(rio,
                gtsummary,
                finalfit,
                flextable,
+               kableExtra,
                sjPlot,
                broom,
                car,
@@ -35,7 +38,7 @@ pacman::p_load(rio,
 
 # gtsummary themes {.unnumbered}
 
-```{r include=FALSE}
+```{r}
 theme_gtsummary_journal(journal = "jama")
 theme_gtsummary_language(language = "en")
 theme_gtsummary_compact()
@@ -215,7 +218,13 @@ data_clear |>
   bold_labels() |>
   add_ci(statistic = list(all_categorical() ~ "{conf.low} - {conf.high}"), 
          style_fun = list(all_categorical() ~ purrr::partial(style_percent, digits = 1))) |>
-  modify_caption("Table S1. Characteristics of Venezuelan adults living in Peru (N = {N})")
+  modify_caption("Table S1. Characteristics of Venezuelan adults living in Peru (N = {N})") |>
+  
+  # HTML table with flextable
+  as_flex_table() |>
+  theme_booktabs() |>
+  font(part = "all", fontname = "Segoe UI") |>
+  fontsize(size = 10, part = "all")
 ```
 
 ### Expansion factor weighted descriptive table
@@ -243,6 +252,8 @@ tbl_svysummary <-
                 ci_stat_0 = "**95% CI**") |>
   modify_spanning_header(c("stat_0", "ci_stat_0") ~ "**Weighted proportion**") |>
   modify_footnote(stat_0 ~ "n (%) = count unweighted (weighted percentage)")
+
+# View
 tbl_svysummary
 ```
 
@@ -265,9 +276,7 @@ Package `survey` and `gtsummary` are required.
 
 ### Bivariate analysis
 
-Chi-squared test with Rao & Scott's second-order correction and Holm-Bonferroni method to adjust for multiple tests.
-
-Use [@garcía-pérez2023] to understand the goodness of fit
+Chi-squared test with Rao & Scott's second-order correction and Holm-Bonferroni method to adjust for multiple tests. Use [@garcía-pérez2023] to understand the goodness of fit.
 
 ```{r}
 tbl_svysummary_bivariate <-
@@ -292,6 +301,8 @@ tbl_svysummary_bivariate <-
   modify_column_alignment(columns = everything(), align = "left") |>
   modify_caption("**Table 2**. Characteristics of Venezuelan adults according to FIES") |>
   modify_header(all_stat_cols() ~ "**{level}**, n = {n_unweighted} ({style_percent(p)}%)")
+
+# View
 tbl_svysummary_bivariate
 ```
 
@@ -334,8 +345,10 @@ We performed unadjusted ordinal logistic regression models with proportional odd
 Let's use `svyolr()` from `survey` package to fit cumulative link models, specifically proportional odds sample-weighted
 
 ```{r}
+# survey design
 design <- svydesign(ids = ~1, data = data_clear, weights = ~factorfinal)
 
+# Univariate regression models
 univ_tab <-
   tbl_uvregression(
     data = design,
@@ -362,7 +375,7 @@ Let's use `polr()` from `MASS` package to fit proportional odds logistic regress
 Using the function created is not possible to obtain p-values, so this test must be run using other functions such as `dropterm()`, `drop1()`, `Anova()` and `lrtest()`. It's not feasible to extract the p-values to generate a new column and append it to the tidy tibble object. Although it is possible to extract the p-value using the `$` or `[row, column]` operators, it varies considerably even after assigning the results to a tibble, data.frame, or list.
 
 ```{r, eval=FALSE}
-# tbl_regression
+# Univariate regression models with tbl_regression
 polr(FIES ~ sexo, 
      weights = factorfinal,
      data = data_clear, 
@@ -376,9 +389,9 @@ polr(FIES ~ sexo,
                  pvalue_fun = ~style_pvalue(.x, digits = 3),
                  estimate_fun = ~style_number(.x, digits = 2))
 
-# tidy
+# Univariate regression models with tidy
 
-## Univariate regression models
+## Build models
 exp1 <- polr(FIES ~ sexo, weights = factorfinal, data = data_clear, Hess = TRUE, method = "logistic")
 exp2 <- polr(FIES ~ edad, weights = factorfinal, data = data_clear, Hess = TRUE, method = "logistic")
 exp3 <- polr(FIES ~ estrato, weights = factorfinal, data = data_clear, Hess = TRUE, method = "logistic")
@@ -418,7 +431,10 @@ lapply(polr_results, function(x) drop1(x, test = "Chisq"))
 Let's use `vglm` from `VGAM` package to fit proportional odds logistic regression models sample-weighted. `VGAM::vglm` has limited support by `tbl_regression()` and `tbl_uvregression()`. Instead, the functions `summary()`, `coef()`, `confint()`, and `exp()` can be used to extract the coefficients and their confidence intervals, but the `sjPlot::tab_model()` function provides a better visualization.
 
 ```{r}
+# Build models
 univ_vglm <- vglm(FIES ~ sexo, weights = factorfinal, data = data_clear, family = propodds)
+
+# Table
 tab_model(univ_vglm, show.intercept = F)
 ```
 
@@ -442,8 +458,7 @@ lapply(colnames(data_loop)[-1],
 map(colnames(data_loop)[-1], 
     ~ polr(as.formula(paste("FIES ~", .x)), weights = weights, data = data_loop, method = "logistic") |>
       coef() |>
-      exp() |>
-      tab_model)
+      exp())
 ```
 
 ## Adjusted model
@@ -451,8 +466,10 @@ map(colnames(data_loop)[-1],
 ### Proportional odds logistic regression model with `svyolr`
 
 ```{r}
+# survey design
 design <- svydesign(ids = ~1, data = data_clear, weights = ~factorfinal)
 
+# Multivariable regression model
 mv_tab <- svyolr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigratoria + 
                    residencia + vivienda + enf_cronica + seguro + trabajo, 
                  method = "logistic", design = design) |> 
@@ -468,6 +485,7 @@ mv_tab <- svyolr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigratoria
 ### Proportional odds logistic regression model with `polr`
 
 ```{r}
+# Multivariable regression model
 mv_tab_polr <- polr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigratoria + 
                       residencia + vivienda + enf_cronica + seguro + trabajo, 
                     data = data_clear, weights = factorfinal, Hess = TRUE, method = "logistic") |>
@@ -476,8 +494,16 @@ mv_tab_polr <- polr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigrato
                  tidy_fun = broom.helpers::tidy_parameters,
                  pvalue_fun = ~style_pvalue(.x, digits = 3),
                  estimate_fun = ~style_number(.x, digits = 2)) |>
-  add_vif()
-mv_tab_polr
+  add_vif() |>
+  modify_column_alignment(columns = everything(), align = "left") |>
+  modify_caption("Table S2. Factors associated with FIES by proportional odds logistic regression")
+
+# HTML table with flextable
+mv_tab_polr |>
+  as_flex_table() |>
+  theme_zebra() |>
+  font(part = "all", fontname = "Segoe UI") |>
+  fontsize(size = 10, part = "all")
 ```
 
 ### Proportional odds logistic regression model with `vglm`
@@ -488,10 +514,12 @@ Alternatively, you can create a tibble object using the `tidy()` function, which
 mv_vglm <- vglm(FIES ~ sexo + estrato + educacion + estadocivil + sitmigratoria + 
                       residencia + vivienda + enf_cronica + seguro + trabajo, 
                       data = data_clear, weights = factorfinal, family = propodds)
+
 tab_model(mv_vglm, show.intercept = F)
 ```
 
 ```{r}
+# Modifications
 tbl_merge <-
   gtsummary::tbl_merge(tbls = list(univ_tab, mv_tab),
             tab_spanner = c("**Unadjusted Analysis**", "**Adjusted Analysis**")) |>
@@ -506,24 +534,34 @@ tbl_merge <-
                   GVIF_2 = "GVIF = Generalized Variance Inflation Factor",
                   aGVIF_2 = "aVIF = Adjusted GVIF") |>
   modify_caption("**Table 3.** Factors associated with FIES by Ordinal Logistic Regression")
+
+# View
 tbl_merge
 ```
 
 ### Multinomial logistic regression
 
-```{r eval=FALSE}
+```{r}
+# Multivariable regression model
 mv_multinom_tab <- multinom(FIES ~ sexo + edad + estrato + educacion + estadocivil + sitmigratoria + 
-              residencia + vivienda + enf_cronica + seguro + COVID19 + trabajo, 
+                              residencia + vivienda + enf_cronica + seguro + trabajo, 
             data = data_clear, weights = factorfinal) |>
   tbl_regression(exponentiate = TRUE, 
                  pvalue_fun = ~style_pvalue(., digits = 3)) |>
-  modify_caption("**Table 4**. Factors associated with FIES by Multinomial logistic regression")
-mv_multinom_tab
+  modify_caption("Table S3. Factors associated with FIES by multinomial logistic regression")
+
+# HTML table with kableExtra
+mv_multinom_tab |>
+  as_kable_extra() |>
+  kable_styling(bootstrap_options = c("hover", "striped", "condensed"), 
+                position = "center", fixed_thead = TRUE, font_size = 14) |>
+  kable_classic_2("hover", full_width = FALSE, html_font = "Segoe UI") |>
+  row_spec(0, bold = TRUE, align = "left")
 ```
 
 # Save outputs
 
-```{r}
+```{r include=FALSE}
 # Table 1
 tbl1 <- as_flex_table(tbl_svysummary)
 
