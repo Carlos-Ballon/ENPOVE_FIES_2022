@@ -247,12 +247,11 @@ data_clear |>
          style_fun = list(all_categorical() ~ purrr::partial(style_percent, digits = 1))) |>
   modify_caption("Table S1. Characteristics of Venezuelan adults living in Peru (N = {N})") |>
   
-  # HTML table with kableExtra
-  as_kable_extra() |>
-  kable_styling(bootstrap_options = c("hover", "condensed"), 
-                position = "center", fixed_thead = TRUE) |>
-  kable_classic_2("hover", full_width = FALSE, html_font = "Segoe UI") |>
-  row_spec(0, bold = TRUE, align = "left")
+  # HTML table with flextable
+  as_flex_table() |>
+  theme_booktabs() |>
+  font(part = "all", fontname = "Segoe UI") |>
+  fontsize(size = 10, part = "all")
 ```
 
 ### Expansion factor weighted descriptive table
@@ -281,6 +280,9 @@ tbl_svysummary <-
                 ci_stat_0 = "**95% CI**") |>
   modify_spanning_header(c("stat_0", "ci_stat_0") ~ "**Weighted proportion**") |>
   modify_footnote(stat_0 ~ "n (%) = count unweighted (weighted percentage)")
+
+# View
+tbl_svysummary
 ```
 
 ### Confirm with `dplyr` package
@@ -330,13 +332,8 @@ tbl_svysummary_bivariate <-
   modify_caption("**Table 2**. Characteristics of Venezuelan adults according to FIES") |>
   modify_header(all_stat_cols() ~ "**{level}**, n = {n_unweighted} ({style_percent(p)}%)")
 
-# HTML table with kableExtra
-tbl_svysummary_bivariate |>
-  as_kable_extra() |>
-  kable_styling(bootstrap_options = c("hover", "condensed"), 
-                position = "center", fixed_thead = TRUE) |>
-  kable_classic_2("hover", full_width = FALSE, html_font = "Segoe UI") |>
-  row_spec(0, bold = TRUE, align = "left")
+# View
+tbl_svysummary_bivariate
 ```
 
 ### Confirm with `dplyr` package
@@ -553,7 +550,8 @@ mv_tab_polr <- polr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigrato
 mv_tab_polr |>
   as_flex_table() |>
   theme_zebra() |>
-  font(part = "all", fontname = "Segoe UI")
+  font(part = "all", fontname = "Segoe UI") |>
+  fontsize(size = 10, part = "all")
 ```
 
 ### Proportional odds logistic regression model with `vglm`
@@ -586,6 +584,7 @@ tbl_merge <-
                   aGVIF_2 = "aVIF = Adjusted GVIF") |>
   modify_caption("**Table 3.** Factors associated with FIES by Ordinal Logistic Regression")
 
+# View
 tbl_merge
 ```
 
@@ -604,28 +603,12 @@ mv_multinom_tab <- multinom(FIES ~ sexo + edad + estrato + educacion + estadociv
 mv_multinom_tab |>
   as_kable_extra() |>
   kable_styling(bootstrap_options = c("hover", "striped", "condensed"), 
-                position = "center", fixed_thead = TRUE) |>
+                position = "center", fixed_thead = TRUE, font_size = 14) |>
   kable_classic_2("hover", full_width = FALSE, html_font = "Segoe UI") |>
   row_spec(0, bold = TRUE, align = "left")
 ```
 
 # Save outputs
-
-``` r
-# Table 1
-tbl1 <- as_flex_table(tbl_svysummary)
-
-# Table 2
-tbl2 <- as_flex_table(tbl_svysummary_bivariate)
-
-# Table 3
-tbl3 <- as_flex_table(tbl_merge)
-
-# Save
-save_as_docx(tbl1, path = "/Academic/ENPOVE/ENPOVE_FIES_2022/outputs/Table_1.docx", align = "center")
-save_as_docx(tbl2, path = "/Academic/ENPOVE/ENPOVE_FIES_2022/outputs/Table_2.docx", align = "center") 
-save_as_docx(tbl3, path = "/Academic/ENPOVE/ENPOVE_FIES_2022/outputs/Table_3.docx", align = "center")
-```
 
 <div id="refs" class="references csl-bib-body hanging-indent">
 
