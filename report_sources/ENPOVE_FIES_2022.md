@@ -545,13 +545,6 @@ mv_tab_polr <- polr(FIES ~ sexo + estrato + educacion + estadocivil + sitmigrato
   add_vif() |>
   modify_column_alignment(columns = everything(), align = "left") |>
   modify_caption("Table S2. Factors associated with FIES by proportional odds logistic regression")
-
-# HTML table with flextable
-mv_tab_polr |>
-  as_flex_table() |>
-  theme_zebra() |>
-  font(part = "all", fontname = "Segoe UI") |>
-  fontsize(size = 10, part = "all")
 ```
 
 ### Proportional odds logistic regression model with `vglm`
