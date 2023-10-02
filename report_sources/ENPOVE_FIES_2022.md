@@ -591,14 +591,6 @@ mv_multinom_tab <- multinom(FIES ~ sexo + edad + estrato + educacion + estadociv
   tbl_regression(exponentiate = TRUE, 
                  pvalue_fun = ~style_pvalue(., digits = 3)) |>
   modify_caption("Table S3. Factors associated with FIES by multinomial logistic regression")
-
-# HTML table with kableExtra
-mv_multinom_tab |>
-  as_kable_extra() |>
-  kable_styling(bootstrap_options = c("hover", "striped", "condensed"), 
-                position = "center", fixed_thead = TRUE, font_size = 14) |>
-  kable_classic_2("hover", full_width = FALSE, html_font = "Segoe UI") |>
-  row_spec(0, bold = TRUE, align = "left")
 ```
 
 # Save outputs
