@@ -1,0 +1,9 @@
+*~
+outputs
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rmd
+*~
+ENPOVE_FIES_2022_files
